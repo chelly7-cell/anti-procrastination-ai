@@ -19,17 +19,17 @@ app.get("/", (req, res) => {
 app.post("/analyze", (req, res) => {
   let { site, time } = req.body;
 
-  // 🔥 normalize site (remove www)
-  site = site.replace("www.", "");
+  site = (site || "").replace("www.", "");
+  time = Number(time) || 0;
 
-  // save raw data
   stats.push({
     site,
     time,
     date: new Date().toISOString()
   });
 
-  // 🔥 accumulate time
+  if (stats.length > 1000) stats.shift();
+
   if (!siteTotals[site]) {
     siteTotals[site] = 0;
   }
@@ -39,16 +39,13 @@ app.post("/analyze", (req, res) => {
   let status = "FOCUSED";
   let message = "Good job!";
 
-  // 🔥 check DISTRACTION based on TOTAL time
   if (
     distractingSites.some(s => site.includes(s)) &&
     siteTotals[site] >= 1
   ) {
     status = "DISTRACTED";
-    message = `⚠️ You spent ${siteTotals[site].toFixed(1)} min on ${site}. Go back to work!`;
+    message = `⚠️ You spent ${siteTotals[site].toFixed(1)} min on ${site}`;
   }
-
-  console.log("TOTAL:", site, siteTotals[site]);
 
   res.json({ status, message });
 });
@@ -57,6 +54,8 @@ app.get("/stats", (req, res) => {
   res.json(stats);
 });
 
-app.listen(5000, () => {
-  console.log("🚀 Server running on http://localhost:5000");
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
 });
